@@ -1,33 +1,15 @@
 'use server';
+
 import { JSDOM } from 'jsdom';
-
-export type ExtractAndTranslateWordsInput = {
-  text: string;
-};
-
-export type Word = {
-  word: string;
-  vietnameseMeaning: Meaning[];
-  phoneticTranscriptionUK: string;
-  phoneticTranscriptionUS: string;
-  ukSoundUrl?: string | null;
-  usSoundUrl?: string | null;
-};
-
-export type Meaning = {
-  type: string;
-  meaning: string[];
-}
-
-export type ExtractAndTranslateWordsOutput = Word[];
+import type { Word, Meaning, ExtractAndTranslateWordsOutput } from './types';
 
 export async function extractAndTranslateWords(
-  input: ExtractAndTranslateWordsInput
+  input: string
 ): Promise<ExtractAndTranslateWordsOutput> {
   return new Promise(async (resolve, reject) => { // Make the callback async
     const result: ExtractAndTranslateWordsOutput = [];
     try {
-      const list = extracWords(input.text);
+      const list = extracWords(input);
       for (const word of list) {
         const htm = await loadPage("https://dict.laban.vn/find?type=1&query=" + encodeURIComponent(word));
         const parsedWord = await parseHtml(word, htm); // Await the parsed word
@@ -84,9 +66,7 @@ async function parseHtml(word: string, html: string): Promise<Word> {
   const document = new JSDOM(html).window.document;
   const container = document.querySelector('.word_tab_title_0');
   const transcription = container?.children[0]?.children[0]?.textContent || '';
-  const listMeaning = document.querySelectorAll('.green.bold')
-  const meaning1 = listMeaning[0]?.textContent || '';
-  const meaning2 = listMeaning[1]?.textContent || '';
+
   const ukSoundUrl = await getSoundUrl("uk", word).catch((error) => {
     console.error(`Error fetching sound URL for word "${word}":`, error);
     return null;
@@ -138,18 +118,18 @@ function parseToMeanings(doc: Document): Meaning[] {
     posSections.forEach(posSection => {
       // Extract the part of speech title from the <span> element.
       const posTitleElement = posSection.querySelector('span');
-      console.log('Part of speech element:', posTitleElement);
+      // console.log('Part of speech element:', posTitleElement);
       if (!posTitleElement) return;
 
       const posTitle = posTitleElement.textContent?.trim();
-      console.log('Part of speech title:', posTitle);
+      // console.log('Part of speech title:', posTitle);
       if (!posTitle) return;
 
       const definitions: string[] = [];
 
       // Find the parent container of the definitions.
       const definitionsContainer = posSection.nextElementSibling;
-      console.log('Definitions container:', definitionsContainer?.textContent?.trim());
+      // console.log('Definitions container:', definitionsContainer?.textContent?.trim());
       if (!definitionsContainer) return;
 
       // Iterate through sibling elements until the next part of speech section.
@@ -157,11 +137,11 @@ function parseToMeanings(doc: Document): Meaning[] {
       while (currentElement && !currentElement.classList.contains('bg-grey')) {
         // Definitions are typically in a div with a specific class.
         // We'll look for the green bold class or a grey bold for idioms.
-        
+
         if (currentElement && currentElement.classList.contains('green')
           && currentElement.classList.contains('bold') && currentElement.textContent?.trim()
         ) {
-          console.log('Found definition:', currentElement.textContent.trim());
+          // console.log('Found definition:', currentElement.textContent.trim());
           definitions.push(currentElement.textContent.trim());
         }
 

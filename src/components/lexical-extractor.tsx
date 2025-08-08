@@ -2,10 +2,10 @@
 
 import React from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { handleExtractAndTranslate } from "@/app/actions";
-import type { ExtractAndTranslateWordsOutput } from "@/app/extract-and-translate-words";
+import type { DataPage, ExtractAndTranslateResult, ExtractAndTranslateWordsOutput, AppState } from "@/domain/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,12 +13,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PronunciationButton } from "@/components/pronunciation-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AppController } from "@/domain/app-controller";
 
 const useActionState = React.useActionState || useFormState;
-const initialState: { data: ExtractAndTranslateWordsOutput | null; error: string | null; inputText: string } = {
+const initResult: ExtractAndTranslateResult = {
   data: null,
   error: null,
-  inputText: ''
+  inputText: ""
+};
+const initialState: AppState = {
+  data: null,
+  error: null,
+  inputText: ""
 };
 
 function SubmitButton() {
@@ -43,7 +49,7 @@ function SubmitButton() {
   );
 }
 
-function ResultsSection({ state }: { state: typeof initialState }) {
+function ResultsSection({ state }: { state: AppState }) {
   const { pending } = useFormStatus();
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -57,14 +63,27 @@ function ResultsSection({ state }: { state: typeof initialState }) {
 
   if (pending) return <div ref={resultsRef} className="mt-8"><LoadingSkeleton /></div>;
   if (state.error) return <div ref={resultsRef} className="mt-8"><Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{state.error}</AlertDescription></Alert></div>;
-  if (results && results.length > 0) return <div ref={resultsRef} className="mt-8"><ResultsTable results={results} /></div>;
-  if (results && results.length === 0) return <div ref={resultsRef} className="mt-8"><Alert><AlertTitle>No Words Found</AlertTitle><AlertDescription>No distinct words could be extracted. Please try different text.</AlertDescription></Alert></div>;
-  
+  if (results && results.record.output.length > 0) return <div ref={resultsRef} className="mt-8"><ResultsTable results={results.record.output} /></div>;
+  if (results && results.record.output.length === 0) return <div ref={resultsRef} className="mt-8"><Alert><AlertTitle>No Words Found</AlertTitle><AlertDescription>No distinct words could be extracted. Please try different text.</AlertDescription></Alert></div>;
+
   return null;
 }
 
 export function LexicalExtractor() {
-  const [state, formAction] = useActionState(handleExtractAndTranslate, initialState);
+  const appController = new AppController();
+  const [state, setState] = useState(initialState);
+  const [result, formAction] = useActionState(handleExtractAndTranslate, initResult);
+
+  useEffect(() => {
+    appController.addRecord(result)
+      .then((newState: AppState) => {
+        setState(newState);
+      })
+      .catch((error) => {
+        console.error("Error updating state:", error);
+      })
+  }, [result]);
+
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -89,7 +108,7 @@ export function LexicalExtractor() {
             <SubmitButton />
           </CardFooter>
         </Card>
-        
+
         <ResultsSection state={state} />
       </form>
     </div>
@@ -107,43 +126,43 @@ function ResultsTable({ results }: { results: ExtractAndTranslateWordsOutput }) 
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-            <Table>
+          <Table>
             <TableHeader>
-                <TableRow>
+              <TableRow>
                 <TableHead className="font-bold">Word</TableHead>
                 <TableHead className="font-bold">Vietnamese</TableHead>
                 <TableHead className="font-bold">Phonetics</TableHead>
                 <TableHead className="text-center font-bold">Pronounce</TableHead>
-                </TableRow>
+              </TableRow>
             </TableHeader>
             <TableBody>
-                {results.map((item) => (
+              {results.map((item) => (
                 <TableRow key={item.word}>
-                    <TableCell className="font-medium">{item.word}</TableCell>
-                    <TableCell>
-                        <div className="flex flex-col gap-1">
-                            {item.vietnameseMeaning.map((meaning, index) => (
-                                <span key={index} className="text-sm text-muted-foreground">
-                                  <b>{meaning.type}</b>: <span className="text-black">{meaning.meaning.slice(0, 2).join('; ')}</span>
-                                </span>
-                            ))}
-                        </div>
-                    </TableCell>
-                    <TableCell className="font-code text-sm">
-                        <div className="flex flex-col gap-1">
-                            <span>{item.phoneticTranscriptionUK}</span>
-                        </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                        <div className="flex justify-center items-center gap-1 sm:gap-2">
-                            <PronunciationButton word={item.word} lang="en-GB" label="UK" url={item.ukSoundUrl} />
-                            <PronunciationButton word={item.word} lang="en-US" label="US" url={item.usSoundUrl} />
-                        </div>
-                    </TableCell>
+                  <TableCell className="font-medium">{item.word}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      {item.vietnameseMeaning.map((meaning, index) => (
+                        <span key={index} className="text-sm text-muted-foreground">
+                          <b>{meaning.type}</b>: <span className="text-black">{meaning.meaning.slice(0, 2).join('; ')}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-code text-sm">
+                    <div className="flex flex-col gap-1">
+                      <span>{item.phoneticTranscriptionUK}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center items-center gap-1 sm:gap-2">
+                      <PronunciationButton word={item.word} lang="en-GB" label="UK" url={item.ukSoundUrl} />
+                      <PronunciationButton word={item.word} lang="en-US" label="US" url={item.usSoundUrl} />
+                    </div>
+                  </TableCell>
                 </TableRow>
-                ))}
+              ))}
             </TableBody>
-            </Table>
+          </Table>
         </div>
       </CardContent>
     </Card>
@@ -151,45 +170,45 @@ function ResultsTable({ results }: { results: ExtractAndTranslateWordsOutput }) 
 }
 
 function LoadingSkeleton() {
-    return (
-        <Card className="shadow-lg border-slate-200 dark:border-slate-800">
-            <CardHeader>
-                <Skeleton className="h-8 w-48 rounded-md" />
-                <Skeleton className="h-4 w-64 mt-2 rounded-md" />
-            </CardHeader>
-            <CardContent>
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                {Array.from({ length: 4 }).map((_, i) => (
-                                    <TableHead key={i}><Skeleton className="h-5 w-24 rounded-md" /></TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <TableRow key={i}>
-                                    <TableCell><Skeleton className="h-5 w-16 rounded-md" /></TableCell>
-                                    <TableCell><Skeleton className="h-5 w-24 rounded-md" /></TableCell>
-                                    <TableCell>
-                                      <div className="flex flex-col gap-2">
-                                        <Skeleton className="h-4 w-36 rounded-md" />
-                                        <Skeleton className="h-4 w-36 rounded-md" />
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex justify-center items-center gap-2">
-                                            <Skeleton className="h-10 w-10 rounded-md" />
-                                            <Skeleton className="h-10 w-10 rounded-md" />
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            </CardContent>
-        </Card>
-    );
+  return (
+    <Card className="shadow-lg border-slate-200 dark:border-slate-800">
+      <CardHeader>
+        <Skeleton className="h-8 w-48 rounded-md" />
+        <Skeleton className="h-4 w-64 mt-2 rounded-md" />
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <TableHead key={i}><Skeleton className="h-5 w-24 rounded-md" /></TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-5 w-16 rounded-md" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24 rounded-md" /></TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-2">
+                      <Skeleton className="h-4 w-36 rounded-md" />
+                      <Skeleton className="h-4 w-36 rounded-md" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-center items-center gap-2">
+                      <Skeleton className="h-10 w-10 rounded-md" />
+                      <Skeleton className="h-10 w-10 rounded-md" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }

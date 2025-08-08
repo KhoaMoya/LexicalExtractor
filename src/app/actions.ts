@@ -1,17 +1,12 @@
 "use server";
 
-import { extractAndTranslateWords, type ExtractAndTranslateWordsOutput } from "@/app/extract-and-translate-words";
-
-type FormState = {
-  data: ExtractAndTranslateWordsOutput | null;
-  error: string | null;
-  inputText: string;
-}
+import { extractAndTranslateWords } from "@/domain/extract-and-translate-words";
+import type { ExtractAndTranslateResult } from "@/domain/types";
 
 export async function handleExtractAndTranslate(
-  prevState: FormState,
+  prevState: ExtractAndTranslateResult,
   formData: FormData
-): Promise<FormState> {
+): Promise<ExtractAndTranslateResult> {
   const text = formData.get("text") as string;
 
   if (!text || text.trim().length < 1) {
@@ -19,13 +14,13 @@ export async function handleExtractAndTranslate(
   }
 
   try {
-    const result = await extractAndTranslateWords({ text });
+    const result = await extractAndTranslateWords(text);
     if (!result || result.length === 0) {
       return { data: [], error: null, inputText: text };
     }
     return { data: result, error: null, inputText: text };
   } catch (error) {
-    console.error("Error in GenAI flow:", error);
+    console.error("Error:", error);
     return { data: null, error: "An unexpected error occurred while processing the text. Please try again later.", inputText: text };
   }
 }
