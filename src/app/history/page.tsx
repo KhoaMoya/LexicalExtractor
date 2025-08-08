@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Icons } from '@/components/icons';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 function formatTimestamp(timestamp: any): string {
     if (timestamp && typeof timestamp.low === 'number' && typeof timestamp.high === 'number') {
@@ -35,7 +36,7 @@ export default function HistoryPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-background font-body text-foreground">
-            <header className="py-6 px-4 sm:px-6 lg:px-8">
+            <header className="py-6 px-2 sm:px-6 lg:px-8">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/" className="flex items-center gap-4">
@@ -45,12 +46,15 @@ export default function HistoryPage() {
                             </h1>
                         </Link>
                     </div>
-                    <Button asChild variant="outline">
-                        <Link href="/history">History</Link>
-                    </Button>
+                    <div className="flex items-center gap-4">
+                        <Button asChild variant="outline">
+                            <Link href="/history">History</Link>
+                        </Button>
+                        <ThemeToggle />
+                    </div>
                 </div>
             </header>
-            <main className="flex-grow pb-16 px-4 sm:px-6 lg:px-8">
+            <main className="flex-grow pb-16 px-2 sm:px-6 lg:px-8">
                 <div className="w-full max-w-4xl mx-auto">
                     <Card className="shadow-lg border-slate-200 dark:border-slate-800">
                         <CardHeader>
@@ -95,7 +99,7 @@ export default function HistoryPage() {
                     </Card>
                 </div>
             </main>
-            <footer className="py-6 px-4 sm:px-6 lg:px-8 border-t">
+            <footer className="py-6 px-2 sm:px-6 lg:px-8 border-t">
                 <div className="max-w-4xl mx-auto text-center text-sm text-muted-foreground">
                     <p>Built with Next.js and GenAI. A tool for language learners.</p>
                 </div>

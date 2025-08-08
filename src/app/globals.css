@@ -43,11 +43,11 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --background: 222.2 47.4% 11.2%;
+    --background: 222.2 85% 5%;
     --foreground: 210 40% 98%;
-    --card: 222.2 47.4% 11.2%;
+    --card: 222.2 85% 5%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 47.4% 11.2%;
+    --popover: 222.2 85% 5%;
     --popover-foreground: 210 40% 98%;
     --primary: 216 100% 81.2%;
     --primary-foreground: 216 50% 20%;

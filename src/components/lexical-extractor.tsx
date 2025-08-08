@@ -2,9 +2,10 @@
 
 import React from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import * as HistoryManager from '@/domain/history-manager';
+import * as SettingsManager from '@/domain/settings-manager';
 import { handleExtractAndTranslate } from "@/app/actions";
 import type { ExtractAndTranslateResult, Word } from "@/domain/types";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PronunciationButton } from "@/components/pronunciation-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+
 
 const useActionState = React.useActionState || useFormState;
 
@@ -59,20 +63,22 @@ function ResultsSection({ state }: ResultsSectionProps) {
     }
   }, [state, pending]);
 
-  const hasResults = state.words && state.words.length > 0;
-
   if (pending) return <div ref={resultsRef} className="mt-8"><LoadingSkeleton /></div>;
   if (state.error) return <div ref={resultsRef} className="mt-8"><Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{state.error}</AlertDescription></Alert></div>;
   
-  if (hasResults) {
+  if (state.words && state.words.length > 0) {
     return (
       <div ref={resultsRef} className="mt-8">
         <ResultsTable words={state.words!} />
       </div>
     );
-  } else {
+  }
+
+  if (state.words && state.words.length === 0) {
     return <div ref={resultsRef} className="mt-8"><Alert><AlertTitle>No Words Found</AlertTitle><AlertDescription>No distinct words could be extracted. Please try different text.</AlertDescription></Alert></div>;
   }
+
+  return null
 }
 
 
@@ -87,7 +93,6 @@ export function LexicalExtractor() {
         }
       }
       if (state.words && state.words.length > 0) {
-        // Save to history
         let history = HistoryManager.loadHistory();
         history = HistoryManager.addToHistory(history, state.input, state.words || []);
         HistoryManager.saveHistory(history);
@@ -126,13 +131,45 @@ export function LexicalExtractor() {
 }
 
 function ResultsTable({ words }: { words: Word[] }) {
+  const [showWord, setShowWord] = useState(true);
+  const [showVietnamese, setShowVietnamese] = useState(true);
+
+  useEffect(() => {
+    setShowWord(SettingsManager.getShowWord());
+    setShowVietnamese(SettingsManager.getShowVietnamese());
+  }, []);
+
+  const handleShowWordChange = (checked: boolean) => {
+    setShowWord(checked);
+    SettingsManager.setShowWord(checked);
+  };
+
+  const handleShowVietnameseChange = (checked: boolean) => {
+    setShowVietnamese(checked);
+    SettingsManager.setShowVietnamese(checked);
+  };
+
   return (
     <Card className="shadow-lg border-slate-200 dark:border-slate-800">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">Extracted Words</CardTitle>
-        <CardDescription>
-          Found {words.length} unique word{words.length > 1 ? 's' : ''}.
-        </CardDescription>
+        <div className="flex items-center justify-between">
+            <div className="flex-1">
+                <CardTitle className="text-2xl font-headline">Extracted Words</CardTitle>
+                <CardDescription>
+                Found {words.length} unique word{words.length > 1 ? 's' : ''}.
+                </CardDescription>
+            </div>
+            <div className="flex items-center gap-4">
+                <div className="flex items-center space-x-2">
+                  <Switch id="show-word-toggle" checked={showWord} onCheckedChange={handleShowWordChange} />
+                  <Label htmlFor="show-word-toggle">Show Word</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch id="show-vietnamese-toggle" checked={showVietnamese} onCheckedChange={handleShowVietnameseChange} />
+                  <Label htmlFor="show-vietnamese-toggle">Show Vietnamese</Label>
+                </div>
+            </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -148,15 +185,17 @@ function ResultsTable({ words }: { words: Word[] }) {
             <TableBody>
               {words.map((item) => (
                 <TableRow key={item.word}>
-                  <TableCell className="font-medium">{item.word}</TableCell>
+                  <TableCell className="font-medium">{showWord ? item.word : '***'}</TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1">
-                      {item.vietnameseMeaning.map((meaning, index) => (
-                        <span key={index} className="text-sm text-muted-foreground">
-                          <b>{meaning.type}</b>: <span className="text-black">{meaning.meaning.slice(0, 2).join('; ')}</span>
-                        </span>
-                      ))}
-                    </div>
+                      {showVietnamese ? (
+                        <div className="flex flex-col gap-1">
+                          {item.vietnameseMeaning.map((meaning, index) => (
+                            <span key={index} className="text-sm text-muted-foreground">
+                              <b>{meaning.type}</b>: <span className="text-foreground">{meaning.meaning.slice(0, 2).join('; ')}</span>
+                            </span>
+                          ))}
+                        </div>
+                      ) : '***'}
                   </TableCell>
                   <TableCell className="font-code text-sm">
                     <div className="flex flex-col gap-1">
