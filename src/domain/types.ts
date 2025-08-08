@@ -1,3 +1,4 @@
+import { type Long } from "bson";
 
 export type Word = {
     word: string;
@@ -13,28 +14,14 @@ export type Meaning = {
     meaning: string[];
 };
 
-export type ExtractAndTranslateWordsOutput = Word[];
-
 export type ExtractAndTranslateResult = {
-    data: ExtractAndTranslateWordsOutput | null;
+    words: Word[] | null;
     error: string | null;
-    inputText: string;
+    input: string;
 };
 
 export type ExtractionRecord = {
     time: Long;
     input: string;
-    output: ExtractAndTranslateWordsOutput;
-};
-
-export type DataPage = {
-    record: ExtractionRecord;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-};
-
-export type AppState = {
-    data: DataPage | null;
-    error: string | null;
-    inputText: string;
+    words: Word[];
 };

@@ -1,36 +1,54 @@
 'use client';
 
 import { Long } from 'bson';
-import type { ExtractAndTranslateWordsOutput, ExtractionRecord } from './types';
+import type { Word, ExtractionRecord } from './types';
 
-export class HistoryManager {
-    private records: ExtractionRecord[] = [];
-
-    async addToHistory(input: string, output: ExtractAndTranslateWordsOutput): Promise<void> {
-        const entry: ExtractionRecord = {
-            time: Long.fromNumber(Date.now()),
-            input: input,
-            output: output
-        };
-        this.records.push(entry);
+function getLocalStorage(): Storage | undefined {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage;
     }
+    return undefined;
+}
 
-    loadHistory(): void {
-        const historyData = localStorage.getItem('extractionHistory');
-        if (historyData) {
-            this.records = JSON.parse(historyData);
+export function addToHistory(records: ExtractionRecord[], input: string, words: Word[]): ExtractionRecord[] {
+    const entry: ExtractionRecord = {
+        time: Long.fromNumber(Date.now()),
+        input: input,
+        words: words
+    };
+    return [...records, entry];
+}
+
+export function loadHistory(): ExtractionRecord[] {
+    const localStorage = getLocalStorage();
+    if (!localStorage) return [];
+
+    const historyData = localStorage.getItem('extractionHistory');
+    if (historyData) {
+        try {
+            const parsedData = JSON.parse(historyData);
+            return parsedData.map((record: any) => ({
+                ...record,
+                time: new Long(record.time.low, record.time.high, record.time.unsigned)
+            }));
+        } catch (e) {
+            console.error("Failed to parse history from localStorage", e);
+            return [];
         }
     }
+    return [];
+}
 
-    async saveHistory(): Promise<void> {
-        localStorage.setItem('extractionHistory', JSON.stringify(this.records));
-    }
+export function saveHistory(records: ExtractionRecord[]): void {
+    const localStorage = getLocalStorage();
+    if (!localStorage) return;
+    localStorage.setItem('extractionHistory', JSON.stringify(records));
+}
 
-    getAll(): ExtractionRecord[] {
-        return this.records;
+export function clearHistory(): ExtractionRecord[] {
+    const localStorage = getLocalStorage();
+    if (localStorage) {
+        localStorage.removeItem('extractionHistory');
     }
-
-    clearHistory(): void {
-        this.records = [];
-    }
+    return [];
 }

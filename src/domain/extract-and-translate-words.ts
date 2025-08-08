@@ -1,13 +1,13 @@
-'use server';
+'use serverçç';
 
 import { JSDOM } from 'jsdom';
-import type { Word, Meaning, ExtractAndTranslateWordsOutput } from './types';
+import type { Word, Meaning } from './types';
 
 export async function extractAndTranslateWords(
   input: string
-): Promise<ExtractAndTranslateWordsOutput> {
+): Promise<Word[]> {
   return new Promise(async (resolve, reject) => { // Make the callback async
-    const result: ExtractAndTranslateWordsOutput = [];
+    const result: Word[] = [];
     try {
       const list = extracWords(input);
       for (const word of list) {

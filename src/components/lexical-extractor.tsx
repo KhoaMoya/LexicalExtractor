@@ -2,10 +2,11 @@
 
 import React from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Sparkles } from "lucide-react";
+import * as HistoryManager from '@/domain/history-manager';
 import { handleExtractAndTranslate } from "@/app/actions";
-import type { DataPage, ExtractAndTranslateResult, ExtractAndTranslateWordsOutput, AppState } from "@/domain/types";
+import type { ExtractAndTranslateResult, Word } from "@/domain/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,18 +14,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PronunciationButton } from "@/components/pronunciation-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AppController } from "@/domain/app-controller";
 
 const useActionState = React.useActionState || useFormState;
-const initResult: ExtractAndTranslateResult = {
-  data: null,
+
+const initialState: ExtractAndTranslateResult = {
+  words: null,
   error: null,
-  inputText: ""
-};
-const initialState: AppState = {
-  data: null,
-  error: null,
-  inputText: ""
+  input: ""
 };
 
 function SubmitButton() {
@@ -49,41 +45,54 @@ function SubmitButton() {
   );
 }
 
-function ResultsSection({ state }: { state: AppState }) {
+interface ResultsSectionProps {
+  state: ExtractAndTranslateResult;
+}
+
+function ResultsSection({ state }: ResultsSectionProps) {
   const { pending } = useFormStatus();
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if ((state.data || state.error) && !pending) {
+    if ((state.words || state.error) && !pending) {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [state, pending]);
 
-  const results = state.data;
+  const hasResults = state.words && state.words.length > 0;
 
   if (pending) return <div ref={resultsRef} className="mt-8"><LoadingSkeleton /></div>;
   if (state.error) return <div ref={resultsRef} className="mt-8"><Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{state.error}</AlertDescription></Alert></div>;
-  if (results && results.record.output.length > 0) return <div ref={resultsRef} className="mt-8"><ResultsTable results={results.record.output} /></div>;
-  if (results && results.record.output.length === 0) return <div ref={resultsRef} className="mt-8"><Alert><AlertTitle>No Words Found</AlertTitle><AlertDescription>No distinct words could be extracted. Please try different text.</AlertDescription></Alert></div>;
-
-  return null;
+  
+  if (hasResults) {
+    return (
+      <div ref={resultsRef} className="mt-8">
+        <ResultsTable words={state.words!} />
+      </div>
+    );
+  } else {
+    return <div ref={resultsRef} className="mt-8"><Alert><AlertTitle>No Words Found</AlertTitle><AlertDescription>No distinct words could be extracted. Please try different text.</AlertDescription></Alert></div>;
+  }
 }
 
+
 export function LexicalExtractor() {
-  const appController = new AppController();
-  const [state, setState] = useState(initialState);
-  const [result, formAction] = useActionState(handleExtractAndTranslate, initResult);
-
-  useEffect(() => {
-    appController.addRecord(result)
-      .then((newState: AppState) => {
-        setState(newState);
-      })
-      .catch((error) => {
-        console.error("Error updating state:", error);
-      })
-  }, [result]);
-
+    const [state, formAction] = useActionState(handleExtractAndTranslate, initialState);
+    const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  
+    useEffect(() => {
+      if (state.words || state.error) {
+        if (textAreaRef.current) {
+          textAreaRef.current.value = state.input;
+        }
+      }
+      if (state.words && state.words.length > 0) {
+        // Save to history
+        let history = HistoryManager.loadHistory();
+        history = HistoryManager.addToHistory(history, state.input, state.words || []);
+        HistoryManager.saveHistory(history);
+      }
+    }, [state]);
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -95,13 +104,14 @@ export function LexicalExtractor() {
           </CardHeader>
           <CardContent className="bg-card">
             <Textarea
+              ref={textAreaRef}
               name="text"
               placeholder="Enter any English text here"
               rows={8}
               className="resize-y min-h-[150px] text-base"
               required
               minLength={1}
-              defaultValue={state.inputText}
+              defaultValue={state.input}
             />
           </CardContent>
           <CardFooter className="flex justify-end bg-slate-50 dark:bg-card/50 border-t p-4">
@@ -115,13 +125,13 @@ export function LexicalExtractor() {
   );
 }
 
-function ResultsTable({ results }: { results: ExtractAndTranslateWordsOutput }) {
+function ResultsTable({ words }: { words: Word[] }) {
   return (
     <Card className="shadow-lg border-slate-200 dark:border-slate-800">
       <CardHeader>
         <CardTitle className="text-2xl font-headline">Extracted Words</CardTitle>
         <CardDescription>
-          Found {results.length} unique word{results.length > 1 ? 's' : ''}.
+          Found {words.length} unique word{words.length > 1 ? 's' : ''}.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -136,7 +146,7 @@ function ResultsTable({ results }: { results: ExtractAndTranslateWordsOutput }) 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.map((item) => (
+              {words.map((item) => (
                 <TableRow key={item.word}>
                   <TableCell className="font-medium">{item.word}</TableCell>
                   <TableCell>
