@@ -52,3 +52,7 @@ export function clearHistory(): ExtractionRecord[] {
     }
     return [];
 }
+
+export function removeRecordFromHistory(records: ExtractionRecord[], timestamp: Long): ExtractionRecord[] {
+    return records.filter(record => !record.time.equals(timestamp));
+}

@@ -11,6 +11,19 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Icons } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { Trash2 } from 'lucide-react';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 
 function formatTimestamp(timestamp: any): string {
     const date = new Date(timestamp);
@@ -34,8 +47,18 @@ export default function HistoryPage() {
         HistoryManager.saveHistory(newHistory);
         setHistory(newHistory);
     };
+    
+    const handleRemoveRecord = (recordToRemove: ExtractionRecord) => {
+        const newHistory = HistoryManager.removeRecordFromHistory(history, recordToRemove.time);
+        setHistory(newHistory);
+        HistoryManager.saveHistory(newHistory);
+    };
 
-    const handleRowClick = (record: ExtractionRecord) => {
+    const handleRowClick = (e: React.MouseEvent, record: ExtractionRecord) => {
+        // Prevent row click when clicking on a button inside the row
+        if ((e.target as HTMLElement).closest('button')) {
+            return;
+        }
         router.push(`/history/${record.time.toString()}`);
     };
 
@@ -82,9 +105,9 @@ export default function HistoryPage() {
                                     <div className="sm:hidden">
                                         <div className="space-y-4">
                                             {[...history].reverse().map((record) => (
-                                                <div 
-                                                    key={record.time.toString()} 
-                                                    onClick={() => handleRowClick(record)}
+                                                <div
+                                                    key={record.time.toString()}
+                                                    onClick={(e) => handleRowClick(e, record)}
                                                     className="cursor-pointer border rounded-lg p-4 space-y-2"
                                                 >
                                                     <div>
@@ -96,10 +119,31 @@ export default function HistoryPage() {
                                                             <span className="font-bold text-sm text-muted-foreground">Word Count</span>
                                                             <p>{(record.words && record.words.length > 0) ? record.words.length : 0}</p>
                                                         </div>
-                                                         <div>
+                                                        <div>
                                                             <span className="font-bold text-sm text-muted-foreground">Date</span>
                                                             <p>{formatTimestamp(record.time)}</p>
                                                         </div>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="icon">
+                                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        This action cannot be undone. This will permanently delete this history record.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handleRemoveRecord(record)}>
+                                                                        Delete
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
                                                     </div>
                                                 </div>
                                             ))}
@@ -112,21 +156,45 @@ export default function HistoryPage() {
                                                 <TableRow>
                                                     <TableHead>Input Text</TableHead>
                                                     <TableHead className="text-center">Word Count</TableHead>
-                                                    <TableHead className="text-right">Date</TableHead>
+                                                    <TableHead className="text-center">Date</TableHead>
+                                                    <TableHead className="text-right">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {[...history].reverse().map((record) => (
-                                                    <TableRow 
-                                                        key={record.time.toString()} 
-                                                        onClick={() => handleRowClick(record)}
+                                                    <TableRow
+                                                        key={record.time.toString()}
+                                                        onClick={(e) => handleRowClick(e, record)}
                                                         className="cursor-pointer"
                                                     >
                                                         <TableCell>
                                                             <p className="truncate max-w-md">{record.input}</p>
                                                         </TableCell>
                                                         <TableCell className="text-center">{(record.words && record.words.length > 0) ? record.words.length : 0}</TableCell>
-                                                        <TableCell className="text-right">{formatTimestamp(record.time)}</TableCell>
+                                                        <TableCell className="text-center">{formatTimestamp(record.time)}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon">
+                                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            This action cannot be undone. This will permanently delete this history record.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => handleRemoveRecord(record)}>
+                                                                            Delete
+                                                                        </AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -148,5 +216,3 @@ export default function HistoryPage() {
         </div>
     );
 }
-
-    
