@@ -11,6 +11,7 @@ import { Icons } from './icons';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, ArrowRight, RefreshCw } from 'lucide-react';
+import { playPronunciation } from '@/lib/audio-player';
 
 interface StudySessionProps {
     words: Word[];
@@ -26,10 +27,20 @@ export function StudySession({ words }: StudySessionProps) {
     const [score, setScore] = useState(0);
     const [sessionFinished, setSessionFinished] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
+    const playSound = (word: Word) => {
+        playPronunciation(word.word, word.ukSoundUrl, 'en-GB', audioRef);
+    };
+    
     useEffect(() => {
         // Shuffle words on component mount
-        setShuffledWords([...words].sort(() => Math.random() - 0.5));
+        const newShuffledWords = [...words].sort(() => Math.random() - 0.5);
+        setShuffledWords(newShuffledWords);
+        if (newShuffledWords.length > 0) {
+            // Use a timeout to ensure the browser has had a chance to interact
+            setTimeout(() => playSound(newShuffledWords[0]), 100);
+        }
         inputRef.current?.focus();
     }, [words]);
 
@@ -65,9 +76,11 @@ export function StudySession({ words }: StudySessionProps) {
 
     const goToNextWord = () => {
         if (currentIndex < shuffledWords.length - 1) {
-            setCurrentIndex(prev => prev + 1);
+            const nextIndex = currentIndex + 1;
+            setCurrentIndex(nextIndex);
             setInputValue('');
             setStatus('idle');
+            playSound(shuffledWords[nextIndex]);
             inputRef.current?.focus();
         } else {
             setSessionFinished(true);
@@ -76,20 +89,26 @@ export function StudySession({ words }: StudySessionProps) {
     
     const goToPreviousWord = () => {
         if (currentIndex > 0) {
-            setCurrentIndex(prev => prev - 1);
+            const prevIndex = currentIndex - 1;
+            setCurrentIndex(prevIndex);
             setInputValue('');
             setStatus('idle');
+            playSound(shuffledWords[prevIndex]);
             inputRef.current?.focus();
         }
     };
 
     const restartSession = () => {
-        setShuffledWords([...words].sort(() => Math.random() - 0.5));
+        const newShuffledWords = [...words].sort(() => Math.random() - 0.5);
+        setShuffledWords(newShuffledWords);
         setCurrentIndex(0);
         setScore(0);
         setInputValue('');
         setStatus('idle');
         setSessionFinished(false);
+        if (newShuffledWords.length > 0) {
+            playSound(newShuffledWords[0]);
+        }
         inputRef.current?.focus();
     };
 
@@ -185,3 +204,4 @@ export function StudySession({ words }: StudySessionProps) {
         </div>
     );
 }
+

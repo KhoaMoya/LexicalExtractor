@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { playPronunciation } from "@/lib/audio-player";
 
 type Props = {
   word: string;
@@ -13,57 +14,30 @@ type Props = {
 };
 
 export function PronunciationButton({ word, lang, label, url }: Props) {
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [canUseSpeechSynthesis, setCanUseSpeechSynthesis] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const loadVoices = () => {
-      setVoices(window.speechSynthesis.getVoices());
-    };
-
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      loadVoices();
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
+        const checkVoices = () => {
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                setCanUseSpeechSynthesis(true);
+            }
+        };
+        checkVoices();
+        window.speechSynthesis.onvoiceschanged = checkVoices;
 
-    return () => {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.onvoiceschanged = null;
-      }
-    };
+        return () => {
+            window.speechSynthesis.onvoiceschanged = null;
+        };
+    }
   }, []);
 
   const handlePronounce = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault(); // Prevent form submission
-    event.stopPropagation(); // Stop event propagation
-
-    if (url) {
-      // Play audio from URL
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      } else {
-        audioRef.current = new Audio(url);
-      }
-
-      audioRef.current.src = url;
-      audioRef.current.play();
-
-
-    } else if (typeof window !== "undefined" && window.speechSynthesis) {
-      // Use Speech Synthesis API
-      const utterance = new SpeechSynthesisUtterance(word);
-      const selectedVoice = voices.find((voice) => voice.lang === lang);
-
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      } else {
-        utterance.lang = lang; // Fallback if specific voice not found
-      }
-
-      window.speechSynthesis.cancel(); // Cancel any previous speech
-      window.speechSynthesis.speak(utterance);
-    }
+    event.preventDefault(); 
+    event.stopPropagation();
+    playPronunciation(word, url, lang, audioRef);
   };
 
   return (
@@ -75,7 +49,7 @@ export function PronunciationButton({ word, lang, label, url }: Props) {
             size="icon"
             onClick={handlePronounce}
             aria-label={`Pronounce ${word} in ${label} English`}
-            disabled={voices.length === 0 && !url}
+            disabled={!url && !canUseSpeechSynthesis}
           >
             <Volume2 className="h-5 w-5" />
           </Button>
@@ -84,7 +58,7 @@ export function PronunciationButton({ word, lang, label, url }: Props) {
           <p>Pronounce ({label})</p>
         </TooltipContent>
       </Tooltip>
-      {url && <audio ref={audioRef} src={url} preload="auto" />}
+      {/* The audio element is managed via ref by the playPronunciation function */}
     </TooltipProvider>
   );
 }
