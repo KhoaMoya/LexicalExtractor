@@ -74,8 +74,8 @@ export default function HistoryDetailPage() {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-background font-body text-foreground">
-            <header className="py-6 px-2 sm:px-6 lg:px-8">
+        <div className="flex flex-col h-screen bg-background font-body text-foreground">
+            <header className="py-6 px-2 sm:px-6 lg:px-8 border-b">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/" className="flex items-center gap-4">
@@ -98,9 +98,9 @@ export default function HistoryDetailPage() {
                     </div>
                 </div>
             </header>
-            <main className="flex-grow pb-16 px-2 sm:px-6 lg:px-8">
-                <div className="w-full max-w-4xl mx-auto">
-                    <div className="mb-4">
+            <main className="flex-grow overflow-hidden px-2 sm:px-6 lg:px-8">
+                <div className="w-full max-w-4xl mx-auto h-full flex flex-col">
+                    <div className="py-4">
                         <Button asChild variant="outline">
                             <Link href="/history" className="flex items-center gap-2">
                                 <ArrowLeft className="h-4 w-4" />
@@ -109,53 +109,55 @@ export default function HistoryDetailPage() {
                         </Button>
                     </div>
                     {record ? (
-                        <div className="space-y-8">
-                            <Card className="shadow-lg border-slate-200 dark:border-slate-800">
-                                <CardHeader>
-                                    <CardTitle className="text-2xl font-headline">Original Text</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-muted-foreground whitespace-pre-wrap">{record.input}</p>
-                                </CardContent>
-                            </Card>
+                        <div className="flex-grow flex flex-col gap-8 overflow-hidden">
+                            <div className="flex-shrink-0">
+                                <Card className="shadow-lg border-slate-200 dark:border-slate-800 max-h-48 overflow-y-auto">
+                                    <CardHeader>
+                                        <CardTitle className="text-2xl font-headline">Original Text</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-muted-foreground whitespace-pre-wrap">{record.input}</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
 
-                            <Card className="shadow-lg border-slate-200 dark:border-slate-800">
-                                <CardHeader>
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
-                                        <div className="flex-1">
-                                            <CardTitle className="text-2xl font-headline">Extracted Words</CardTitle>
-                                            <CardDescription>
-                                                Found {record.words.length} unique word{record.words.length !== 1 ? 's' : ''}.
-                                            </CardDescription>
-                                        </div>
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                            <Dialog>
-                                                <DialogTrigger asChild>
-                                                    <Button variant="outline" disabled={record.words.length === 0}>
-                                                        <BookOpen className="mr-2 h-4 w-4" />
-                                                        Start Study Session
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <DialogContent className="sm:max-w-[425px]">
-                                                    <DialogHeader>
-                                                        <DialogTitle>Study Session</DialogTitle>
-                                                    </DialogHeader>
-                                                    <StudySession words={record.words} />
-                                                </DialogContent>
-                                            </Dialog>
-                                            <div className="flex items-center space-x-2">
-                                                <Switch id="show-word-toggle" checked={showWord} onCheckedChange={handleShowWordChange} />
-                                                <Label htmlFor="show-word-toggle">Show Word</Label>
+                            <div className="flex-grow overflow-hidden">
+                                <Card className="shadow-lg border-slate-200 dark:border-slate-800 h-full flex flex-col">
+                                    <CardHeader className="flex-shrink-0">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
+                                            <div className="flex-1">
+                                                <CardTitle className="text-2xl font-headline">Extracted Words</CardTitle>
+                                                <CardDescription>
+                                                    Found {record.words.length} unique word{record.words.length !== 1 ? 's' : ''}.
+                                                </CardDescription>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                <Switch id="show-vietnamese-toggle" checked={showVietnamese} onCheckedChange={handleShowVietnameseChange} />
-                                                <Label htmlFor="show-vietnamese-toggle">Show Vietnamese</Label>
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="outline" disabled={record.words.length === 0}>
+                                                            <BookOpen className="mr-2 h-4 w-4" />
+                                                            Start Study Session
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-[425px]">
+                                                        <DialogHeader>
+                                                            <DialogTitle>Study Session</DialogTitle>
+                                                        </DialogHeader>
+                                                        <StudySession words={record.words} />
+                                                    </DialogContent>
+                                                </Dialog>
+                                                <div className="flex items-center space-x-2">
+                                                    <Switch id="show-word-toggle" checked={showWord} onCheckedChange={handleShowWordChange} />
+                                                    <Label htmlFor="show-word-toggle">Show Word</Label>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <Switch id="show-vietnamese-toggle" checked={showVietnamese} onCheckedChange={handleShowVietnameseChange} />
+                                                    <Label htmlFor="show-vietnamese-toggle">Show Vietnamese</Label>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="overflow-x-auto">
+                                    </CardHeader>
+                                    <CardContent className="overflow-y-auto flex-grow pb-6">
                                         {/* Mobile View */}
                                         <div className="sm:hidden">
                                             <div className="space-y-4">
@@ -187,7 +189,7 @@ export default function HistoryDetailPage() {
                                         {/* Desktop View */}
                                         <div className="hidden sm:block">
                                             <Table>
-                                                <TableHeader>
+                                                <TableHeader className="sticky top-0 bg-card">
                                                     <TableRow>
                                                         <TableHead className="font-bold">Word</TableHead>
                                                         <TableHead className="font-bold">Phonetics</TableHead>
@@ -226,20 +228,22 @@ export default function HistoryDetailPage() {
                                                 </TableBody>
                                             </Table>
                                         </div>
-                                    </div>
-                                 </CardContent>
-                            </Card>
+                                    </CardContent>
+                                </Card>
+                            </div>
                         </div>
                     ) : (
-                        <Card className="shadow-lg border-slate-200 dark:border-slate-800">
-                            <CardContent>
-                                <p className="text-muted-foreground text-center py-8">History record not found.</p>
-                            </CardContent>
-                        </Card>
+                        <div className="flex-grow flex items-center justify-center">
+                            <Card className="shadow-lg border-slate-200 dark:border-slate-800">
+                                <CardContent>
+                                    <p className="text-muted-foreground text-center py-8">History record not found.</p>
+                                </CardContent>
+                            </Card>
+                        </div>
                     )}
                 </div>
             </main>
-            <footer className="py-6 px-2 sm:px-6 lg:px-8 border-t">
+            <footer className="py-6 px-2 sm:px-6 lg:px-8 border-t flex-shrink-0">
                 <div className="max-w-4xl mx-auto text-center text-sm text-muted-foreground">
                     <p>Built with Next.js and GenAI. A tool for language learners.</p>
                 </div>
