@@ -14,8 +14,6 @@ import { Icons } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ArrowLeft, BookOpen, LogOut } from 'lucide-react';
 import { PronunciationButton } from '@/components/pronunciation-button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { StudySession } from '@/components/study-session';
 import { useAuth } from '@/components/auth-provider';
@@ -24,8 +22,6 @@ import { signOutUser } from '@/domain/auth-manager';
 export default function HistoryDetailPage() {
     const [record, setRecord] = useState<ExtractionRecord | null>(null);
     const [loading, setLoading] = useState(true);
-    const [showWord, setShowWord] = useState(true);
-    const [showVietnamese, setShowVietnamese] = useState(true);
     const { user } = useAuth();
     const router = useRouter();
 
@@ -44,21 +40,6 @@ export default function HistoryDetailPage() {
     useEffect(() => {
         fetchRecord();
     }, [fetchRecord]);
-
-    useEffect(() => {
-        setShowWord(SettingsManager.getShowWord());
-        setShowVietnamese(SettingsManager.getShowVietnamese());
-    }, []);
-
-    const handleShowWordChange = (checked: boolean) => {
-        setShowWord(checked);
-        SettingsManager.setShowWord(checked);
-    };
-
-    const handleShowVietnameseChange = (checked: boolean) => {
-        setShowVietnamese(checked);
-        SettingsManager.setShowVietnamese(checked);
-    };
 
     const handleSignOut = async () => {
         await signOutUser();
@@ -86,15 +67,17 @@ export default function HistoryDetailPage() {
                         </Link>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Button asChild variant="outline">
-                            <Link href="/history">History</Link>
-                        </Button>
+                        <div className="flex items-center gap-4">
+                            <Button asChild variant="outline">
+                                <Link href="/history">History</Link>
+                            </Button>
+                            <ThemeToggle />
+                        </div>
                         {user && (
                             <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
                                 <LogOut className="h-5 w-5" />
                             </Button>
                         )}
-                        <ThemeToggle />
                     </div>
                 </div>
             </header>
@@ -110,7 +93,7 @@ export default function HistoryDetailPage() {
                     </div>
                     {record ? (
                         <div className="flex-grow flex flex-col gap-8 overflow-hidden">
-                            <div className="flex-shrink-0">
+                            <div className="flex-shrink-0 sticky top-0 bg-background z-10 py-4">
                                 <Card className="shadow-lg border-slate-200 dark:border-slate-800 max-h-48 overflow-y-auto">
                                     <CardHeader>
                                         <CardTitle className="text-2xl font-headline">Original Text</CardTitle>
@@ -121,7 +104,7 @@ export default function HistoryDetailPage() {
                                 </Card>
                             </div>
 
-                            <div className="flex-grow overflow-hidden">
+                            <div className="flex-grow overflow-hidden -mt-8 pt-8">
                                 <Card className="shadow-lg border-slate-200 dark:border-slate-800 h-full flex flex-col">
                                     <CardHeader className="flex-shrink-0">
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
@@ -146,14 +129,6 @@ export default function HistoryDetailPage() {
                                                         <StudySession words={record.words} />
                                                     </DialogContent>
                                                 </Dialog>
-                                                <div className="flex items-center space-x-2">
-                                                    <Switch id="show-word-toggle" checked={showWord} onCheckedChange={handleShowWordChange} />
-                                                    <Label htmlFor="show-word-toggle">Show Word</Label>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <Switch id="show-vietnamese-toggle" checked={showVietnamese} onCheckedChange={handleShowVietnameseChange} />
-                                                    <Label htmlFor="show-vietnamese-toggle">Show Vietnamese</Label>
-                                                </div>
                                             </div>
                                         </div>
                                     </CardHeader>
@@ -164,7 +139,7 @@ export default function HistoryDetailPage() {
                                                 {record.words.map((item) => (
                                                     <div key={item.word} className="border rounded-lg p-4 space-y-2">
                                                         <div className="flex justify-between items-center">
-                                                            <p className="font-medium text-lg">{showWord ? item.word : '***'}</p>
+                                                            <p className="font-medium text-lg">{item.word}</p>
                                                             <div className="flex items-center">
                                                                 <PronunciationButton word={item.word} lang="en-GB" label="UK" url={item.ukSoundUrl} />
                                                                 <PronunciationButton word={item.word} lang="en-US" label="US" url={item.usSoundUrl} />
@@ -172,22 +147,20 @@ export default function HistoryDetailPage() {
                                                         </div>
                                                         <p className="font-code text-sm text-muted-foreground">{item.phoneticTranscriptionUK}</p>
                                                         <div>
-                                                            {showVietnamese ? (
-                                                                <div className="flex flex-col gap-1">
-                                                                    {item.vietnameseMeaning.map((meaning, index) => (
-                                                                        <span key={index} className="text-sm">
-                                                                            <b>{meaning.type}</b>: <span className="text-foreground/80">{meaning.meaning.slice(0, 2).join('; ')}</span>
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            ) : '***'}
+                                                            <div className="flex flex-col gap-1">
+                                                                {item.vietnameseMeaning.map((meaning, index) => (
+                                                                    <span key={index} className="text-sm">
+                                                                        <b>{meaning.type}</b>: <span className="text-foreground/80">{meaning.meaning.slice(0, 2).join('; ')}</span>
+                                                                    </span>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                         {/* Desktop View */}
-                                        <div className="hidden sm:block">
+                                        <div className="hidden sm:block overflow-x-auto">
                                             <Table>
                                                 <TableHeader className="sticky top-0 bg-card">
                                                     <TableRow>
@@ -200,7 +173,7 @@ export default function HistoryDetailPage() {
                                                 <TableBody>
                                                     {record.words.map((item) => (
                                                         <TableRow key={item.word}>
-                                                            <TableCell className="font-medium">{showWord ? item.word : '***'}</TableCell>
+                                                            <TableCell className="font-medium">{item.word}</TableCell>
                                                             <TableCell className="font-code text-sm">
                                                                 <div className="flex flex-col gap-1">
                                                                     <span>{item.phoneticTranscriptionUK}</span>
@@ -213,15 +186,13 @@ export default function HistoryDetailPage() {
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell>
-                                                                {showVietnamese ? (
-                                                                    <div className="flex flex-col gap-1">
-                                                                        {item.vietnameseMeaning.map((meaning, index) => (
-                                                                            <span key={index} className="text-sm text-muted-foreground">
-                                                                                <b>{meaning.type}</b>: <span className="text-foreground">{meaning.meaning.slice(0, 2).join('; ')}</span>
-                                                                            </span>
-                                                                        ))}
-                                                                    </div>
-                                                                ) : '***'}
+                                                                <div className="flex flex-col gap-1">
+                                                                    {item.vietnameseMeaning.map((meaning, index) => (
+                                                                        <span key={index} className="text-sm text-muted-foreground">
+                                                                            <b>{meaning.type}</b>: <span className="text-foreground">{meaning.meaning.slice(0, 2).join('; ')}</span>
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
                                                             </TableCell>
                                                         </TableRow>
                                                     ))}

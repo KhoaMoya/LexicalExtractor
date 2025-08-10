@@ -92,12 +92,12 @@ export default function HistoryPage() {
                         </Link>
                     </div>
                     <div className="flex items-center gap-4">
+                        <ThemeToggle />
                         {user && (
                           <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
                             <LogOut className="h-5 w-5" />
                           </Button>
                         )}
-                        <ThemeToggle />
                     </div>
                 </div>
             </header>
@@ -171,7 +171,7 @@ export default function HistoryPage() {
                                         </div>
                                     </div>
                                     {/* Desktop View */}
-                                    <div className="hidden sm:block">
+                                    <div className="hidden sm:block overflow-x-auto">
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>

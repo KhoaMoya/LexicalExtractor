@@ -34,12 +34,12 @@ export default function Home() {
             <Button asChild variant="outline">
               <Link href="/history">History</Link>
             </Button>
+            <ThemeToggle />
             {user && (
               <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
                 <LogOut className="h-5 w-5" />
               </Button>
             )}
-            <ThemeToggle />
           </div>
         </div>
       </header>

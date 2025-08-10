@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -5,7 +6,6 @@ import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import * as HistoryManager from '@/domain/history-manager';
-import * as SettingsManager from '@/domain/settings-manager';
 import { handleExtractAndTranslate } from "@/app/actions";
 import type { ExtractAndTranslateResult, Word } from "@/domain/types";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PronunciationButton } from "@/components/pronunciation-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 
 const useActionState = React.useActionState || useFormState;
@@ -129,24 +127,6 @@ export function LexicalExtractor() {
 }
 
 function ResultsTable({ words }: { words: Word[] }) {
-  const [showWord, setShowWord] = useState(true);
-  const [showVietnamese, setShowVietnamese] = useState(true);
-
-  useEffect(() => {
-    setShowWord(SettingsManager.getShowWord());
-    setShowVietnamese(SettingsManager.getShowVietnamese());
-  }, []);
-
-  const handleShowWordChange = (checked: boolean) => {
-    setShowWord(checked);
-    SettingsManager.setShowWord(checked);
-  };
-
-  const handleShowVietnameseChange = (checked: boolean) => {
-    setShowVietnamese(checked);
-    SettingsManager.setShowVietnamese(checked);
-  };
-
   return (
     <Card className="shadow-lg border-slate-200 dark:border-slate-800">
       <CardHeader>
@@ -157,90 +137,74 @@ function ResultsTable({ words }: { words: Word[] }) {
                 Found {words.length} unique word{words.length > 1 ? 's' : ''}.
                 </CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="flex items-center space-x-2">
-                  <Switch id="show-word-toggle" checked={showWord} onCheckedChange={handleShowWordChange} />
-                  <Label htmlFor="show-word-toggle">Show Word</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch id="show-vietnamese-toggle" checked={showVietnamese} onCheckedChange={handleShowVietnameseChange} />
-                  <Label htmlFor="show-vietnamese-toggle">Show Vietnamese</Label>
-                </div>
-            </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-            {/* Mobile View */}
-            <div className="sm:hidden">
-              <div className="space-y-4">
-                {words.map((item) => (
-                    <div key={item.word} className="border rounded-lg p-4 space-y-2">
-                        <div className="flex justify-between items-center">
-                            <p className="font-medium text-lg">{showWord ? item.word : '***'}</p>
-                            <div className="flex items-center">
-                                <PronunciationButton word={item.word} lang="en-GB" label="UK" url={item.ukSoundUrl} />
-                                <PronunciationButton word={item.word} lang="en-US" label="US" url={item.usSoundUrl} />
-                            </div>
-                        </div>
-                        <p className="font-code text-sm text-muted-foreground">{item.phoneticTranscriptionUK}</p>
-                        <div>
-                            {showVietnamese ? (
-                                <div className="flex flex-col gap-1">
-                                    {item.vietnameseMeaning.map((meaning, index) => (
-                                        <span key={index} className="text-sm">
-                                            <b>{meaning.type}</b>: <span className="text-foreground/80">{meaning.meaning.slice(0, 2).join('; ')}</span>
-                                        </span>
-                                    ))}
-                                </div>
-                            ) : '***'}
+        {/* Mobile View */}
+        <div className="sm:hidden">
+          <div className="space-y-4">
+            {words.map((item) => (
+                <div key={item.word} className="border rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                        <p className="font-medium text-lg">{item.word}</p>
+                        <div className="flex items-center">
+                            <PronunciationButton word={item.word} lang="en-GB" label="UK" url={item.ukSoundUrl} />
+                            <PronunciationButton word={item.word} lang="en-US" label="US" url={item.usSoundUrl} />
                         </div>
                     </div>
-                ))}
-              </div>
-            </div>
-            {/* Desktop View */}
-            <div className="hidden sm:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="font-bold">Word</TableHead>
-                    <TableHead className="font-bold">Phonetics</TableHead>
-                    <TableHead className="text-center font-bold">Pronounce</TableHead>
-                    <TableHead className="font-bold">Vietnamese</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {words.map((item) => (
-                    <TableRow key={item.word}>
-                      <TableCell className="font-medium">{showWord ? item.word : '***'}</TableCell>
-                      <TableCell className="font-code text-sm">
+                    <p className="font-code text-sm text-muted-foreground">{item.phoneticTranscriptionUK}</p>
+                    <div>
                         <div className="flex flex-col gap-1">
-                          <span>{item.phoneticTranscriptionUK}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex justify-center items-center gap-1 sm:gap-2">
-                          <PronunciationButton word={item.word} lang="en-GB" label="UK" url={item.ukSoundUrl} />
-                          <PronunciationButton word={item.word} lang="en-US" label="US" url={item.usSoundUrl} />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                          {showVietnamese ? (
-                            <div className="flex flex-col gap-1">
-                              {item.vietnameseMeaning.map((meaning, index) => (
-                                <span key={index} className="text-sm text-muted-foreground">
-                                  <b>{meaning.type}</b>: <span className="text-foreground">{meaning.meaning.slice(0, 2).join('; ')}</span>
+                            {item.vietnameseMeaning.map((meaning, index) => (
+                                <span key={index} className="text-sm">
+                                    <b>{meaning.type}</b>: <span className="text-foreground/80">{meaning.meaning.slice(0, 2).join('; ')}</span>
                                 </span>
-                              ))}
-                            </div>
-                          ) : '***'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ))}
+          </div>
+        </div>
+        {/* Desktop View */}
+        <div className="hidden sm:block overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-bold">Word</TableHead>
+                <TableHead className="font-bold">Phonetics</TableHead>
+                <TableHead className="text-center font-bold">Pronounce</TableHead>
+                <TableHead className="font-bold">Vietnamese</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {words.map((item) => (
+                <TableRow key={item.word}>
+                  <TableCell className="font-medium">{item.word}</TableCell>
+                  <TableCell className="font-code text-sm">
+                    <div className="flex flex-col gap-1">
+                      <span>{item.phoneticTranscriptionUK}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center items-center gap-1 sm:gap-2">
+                      <PronunciationButton word={item.word} lang="en-GB" label="UK" url={item.ukSoundUrl} />
+                      <PronunciationButton word={item.word} lang="en-US" label="US" url={item.usSoundUrl} />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                      <div className="flex flex-col gap-1">
+                        {item.vietnameseMeaning.map((meaning, index) => (
+                          <span key={index} className="text-sm text-muted-foreground">
+                            <b>{meaning.type}</b>: <span className="text-foreground">{meaning.meaning.slice(0, 2).join('; ')}</span>
+                          </span>
+                        ))}
+                      </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>
