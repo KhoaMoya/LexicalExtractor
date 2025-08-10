@@ -93,9 +93,7 @@ export function LexicalExtractor() {
         }
       }
       if (state.words && state.words.length > 0) {
-        let history = HistoryManager.loadHistory();
-        history = HistoryManager.addToHistory(history, state.input, state.words || []);
-        HistoryManager.saveHistory(history);
+        HistoryManager.addToHistory(state.input, state.words);
       }
     }, [state]);
 

@@ -2,7 +2,6 @@
 
 import { extractAndTranslateWords } from "@/domain/extract-and-translate-words";
 import type { ExtractAndTranslateResult } from "@/domain/types";
-import { addToHistory, loadHistory, saveHistory } from "@/domain/history-manager";
 
 export async function handleExtractAndTranslate(
   prevState: ExtractAndTranslateResult,

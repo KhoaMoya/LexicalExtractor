@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { ExtractionRecord, Word } from '@/domain/types';
 import * as HistoryManager from '@/domain/history-manager';
 import * as SettingsManager from '@/domain/settings-manager';
@@ -12,28 +12,38 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Icons } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { ArrowLeft, BookOpen, Volume2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, LogOut } from 'lucide-react';
 import { PronunciationButton } from '@/components/pronunciation-button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { StudySession } from '@/components/study-session';
+import { useAuth } from '@/components/auth-provider';
+import { signOutUser } from '@/domain/auth-manager';
 
 export default function HistoryDetailPage() {
     const [record, setRecord] = useState<ExtractionRecord | null>(null);
+    const [loading, setLoading] = useState(true);
     const [showWord, setShowWord] = useState(true);
     const [showVietnamese, setShowVietnamese] = useState(true);
+    const { user } = useAuth();
+    const router = useRouter();
 
     const params = useParams();
     const id = params.id as string;
 
-    useEffect(() => {
-        if (id) {
-            const history = HistoryManager.loadHistory();
-            const foundRecord = history.find(r => r.time.toString() === id) || null;
+    const fetchRecord = useCallback(async () => {
+        if (id && user) {
+            setLoading(true);
+            const foundRecord = await HistoryManager.loadHistoryRecord(id);
             setRecord(foundRecord);
+            setLoading(false);
         }
-    }, [id]);
+    }, [id, user]);
+
+    useEffect(() => {
+        fetchRecord();
+    }, [fetchRecord]);
 
     useEffect(() => {
         setShowWord(SettingsManager.getShowWord());
@@ -49,6 +59,19 @@ export default function HistoryDetailPage() {
         setShowVietnamese(checked);
         SettingsManager.setShowVietnamese(checked);
     };
+
+    const handleSignOut = async () => {
+        await signOutUser();
+        router.push('/login');
+    }
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>Loading...</p>
+            </div>
+        )
+    }
 
     return (
         <div className="flex flex-col min-h-screen bg-background font-body text-foreground">
@@ -66,6 +89,11 @@ export default function HistoryDetailPage() {
                         <Button asChild variant="outline">
                             <Link href="/history">History</Link>
                         </Button>
+                        {user && (
+                            <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
+                                <LogOut className="h-5 w-5" />
+                            </Button>
+                        )}
                         <ThemeToggle />
                     </div>
                 </div>

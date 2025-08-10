@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ExtractionRecord } from '@/domain/types';
 import * as HistoryManager from '@/domain/history-manager';
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Icons } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Trash2 } from 'lucide-react';
+import { LogOut, Trash2 } from 'lucide-react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -23,6 +23,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useAuth } from '@/components/auth-provider';
+import { signOutUser } from '@/domain/auth-manager';
 
 
 function formatTimestamp(timestamp: any): string {
@@ -36,22 +38,32 @@ function formatTimestamp(timestamp: any): string {
 
 export default function HistoryPage() {
     const [history, setHistory] = useState<ExtractionRecord[]>([]);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const { user } = useAuth();
+
+    const fetchHistory = useCallback(async () => {
+        if (!user) return;
+        setLoading(true);
+        const historyData = await HistoryManager.loadHistory();
+        setHistory(historyData);
+        setLoading(false);
+    }, [user]);
 
     useEffect(() => {
-        setHistory(HistoryManager.loadHistory());
-    }, []);
+        fetchHistory();
+    }, [fetchHistory]);
 
-    const handleClearHistory = () => {
-        const newHistory = HistoryManager.clearHistory();
-        HistoryManager.saveHistory(newHistory);
-        setHistory(newHistory);
+    const handleClearHistory = async () => {
+        await HistoryManager.clearHistory();
+        fetchHistory();
     };
     
-    const handleRemoveRecord = (recordToRemove: ExtractionRecord) => {
-        const newHistory = HistoryManager.removeRecordFromHistory(history, recordToRemove.time);
-        setHistory(newHistory);
-        HistoryManager.saveHistory(newHistory);
+    const handleRemoveRecord = async (recordToRemove: ExtractionRecord) => {
+        if (recordToRemove.id) {
+            await HistoryManager.removeRecordFromHistory(recordToRemove.id);
+            fetchHistory();
+        }
     };
 
     const handleRowClick = (e: React.MouseEvent, record: ExtractionRecord) => {
@@ -59,8 +71,13 @@ export default function HistoryPage() {
         if ((e.target as HTMLElement).closest('button')) {
             return;
         }
-        router.push(`/history/${record.time.toString()}`);
+        router.push(`/history/${record.id}`);
     };
+    
+    const handleSignOut = async () => {
+        await signOutUser();
+        router.push('/login');
+    }
 
     return (
         <div className="flex flex-col min-h-screen bg-background font-body text-foreground">
@@ -75,9 +92,11 @@ export default function HistoryPage() {
                         </Link>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Button asChild variant="outline">
-                            <Link href="/history">History</Link>
-                        </Button>
+                        {user && (
+                          <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
+                            <LogOut className="h-5 w-5" />
+                          </Button>
+                        )}
                         <ThemeToggle />
                     </div>
                 </div>
@@ -93,20 +112,22 @@ export default function HistoryPage() {
                                         Here are your past extractions. Click a row to see details.
                                     </CardDescription>
                                 </div>
-                                <Button onClick={handleClearHistory} variant="destructive" disabled={history.length === 0}>
+                                <Button onClick={handleClearHistory} variant="destructive" disabled={history.length === 0 || loading}>
                                     Clear History
                                 </Button>
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {history.length > 0 ? (
+                            {loading ? (
+                                <p className="text-muted-foreground text-center py-8">Loading history...</p>
+                            ) : history.length > 0 ? (
                                 <>
                                     {/* Mobile View */}
                                     <div className="sm:hidden">
                                         <div className="space-y-4">
-                                            {[...history].reverse().map((record) => (
+                                            {history.map((record) => (
                                                 <div
-                                                    key={record.time.toString()}
+                                                    key={record.id}
                                                     onClick={(e) => handleRowClick(e, record)}
                                                     className="cursor-pointer border rounded-lg p-4 space-y-2"
                                                 >
@@ -121,7 +142,7 @@ export default function HistoryPage() {
                                                         </div>
                                                         <div>
                                                             <span className="font-bold text-sm text-muted-foreground">Date</span>
-                                                            <p>{formatTimestamp(record.time)}</p>
+                                                            <p>{formatTimestamp(record.time.toNumber())}</p>
                                                         </div>
                                                         <AlertDialog>
                                                             <AlertDialogTrigger asChild>
@@ -161,9 +182,9 @@ export default function HistoryPage() {
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {[...history].reverse().map((record) => (
+                                                {history.map((record) => (
                                                     <TableRow
-                                                        key={record.time.toString()}
+                                                        key={record.id}
                                                         onClick={(e) => handleRowClick(e, record)}
                                                         className="cursor-pointer"
                                                     >
@@ -171,7 +192,7 @@ export default function HistoryPage() {
                                                             <p className="truncate max-w-md">{record.input}</p>
                                                         </TableCell>
                                                         <TableCell className="text-center">{(record.words && record.words.length > 0) ? record.words.length : 0}</TableCell>
-                                                        <TableCell className="text-center">{formatTimestamp(record.time)}</TableCell>
+                                                        <TableCell className="text-center">{formatTimestamp(record.time.toNumber())}</TableCell>
                                                         <TableCell className="text-right">
                                                             <AlertDialog>
                                                                 <AlertDialogTrigger asChild>

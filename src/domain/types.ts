@@ -21,6 +21,7 @@ export type ExtractAndTranslateResult = {
 };
 
 export type ExtractionRecord = {
+    id?: string; // Firestore document ID
     time: Long;
     input: string;
     words: Word[];

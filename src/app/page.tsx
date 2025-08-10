@@ -1,10 +1,25 @@
+
+'use client';
+
 import { LexicalExtractor } from '@/components/lexical-extractor';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { useAuth } from '@/components/auth-provider';
+import { signOutUser } from '@/domain/auth-manager';
+import { useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 
 export default function Home() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOutUser();
+    router.push('/login');
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background font-body text-foreground">
       <header className="py-6 px-2 sm:px-6 lg:px-8">
@@ -19,6 +34,11 @@ export default function Home() {
             <Button asChild variant="outline">
               <Link href="/history">History</Link>
             </Button>
+            {user && (
+              <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
+                <LogOut className="h-5 w-5" />
+              </Button>
+            )}
             <ThemeToggle />
           </div>
         </div>
