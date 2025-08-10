@@ -81,7 +81,7 @@ export default function HistoryDetailPage() {
                     </div>
                 </div>
             </header>
-            <main className="flex-grow overflow-hidden px-2 sm:px-6 lg:px-8">
+            <main className="flex-grow overflow-y-auto px-2 sm:px-6 lg:px-8">
                 <div className="w-full max-w-4xl mx-auto h-full flex flex-col">
                     <div className="py-4">
                         <Button asChild variant="outline">
@@ -92,21 +92,23 @@ export default function HistoryDetailPage() {
                         </Button>
                     </div>
                     {record ? (
-                        <div className="flex-grow flex flex-col gap-8 overflow-hidden">
-                            <div className="flex-shrink-0 sticky top-0 bg-background z-10 py-4">
-                                <Card className="shadow-lg border-slate-200 dark:border-slate-800 max-h-48 overflow-y-auto">
-                                    <CardHeader>
-                                        <CardTitle className="text-2xl font-headline">Original Text</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-muted-foreground whitespace-pre-wrap">{record.input}</p>
-                                    </CardContent>
-                                </Card>
+                         <div className="flex flex-col sm:flex-row gap-8 pb-8">
+                            <div className="w-full sm:w-1/3">
+                                <div className="sticky top-4">
+                                     <Card className="shadow-lg border-slate-200 dark:border-slate-800 max-h-48 sm:max-h-full overflow-y-auto">
+                                        <CardHeader>
+                                            <CardTitle className="text-2xl font-headline">Original Text</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-muted-foreground whitespace-pre-wrap">{record.input}</p>
+                                        </CardContent>
+                                    </Card>
+                                </div>
                             </div>
 
-                            <div className="flex-grow overflow-hidden -mt-8 pt-8">
-                                <Card className="shadow-lg border-slate-200 dark:border-slate-800 h-full flex flex-col">
-                                    <CardHeader className="flex-shrink-0">
+                            <div className="w-full sm:w-2/3">
+                                <Card className="shadow-lg border-slate-200 dark:border-slate-800">
+                                    <CardHeader>
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
                                             <div className="flex-1">
                                                 <CardTitle className="text-2xl font-headline">Extracted Words</CardTitle>
@@ -132,7 +134,7 @@ export default function HistoryDetailPage() {
                                             </div>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="overflow-y-auto flex-grow pb-6">
+                                    <CardContent>
                                         {/* Mobile View */}
                                         <div className="sm:hidden">
                                             <div className="space-y-4">
@@ -160,9 +162,9 @@ export default function HistoryDetailPage() {
                                             </div>
                                         </div>
                                         {/* Desktop View */}
-                                        <div className="hidden sm:block overflow-x-auto">
+                                        <div className="hidden sm:block">
                                             <Table>
-                                                <TableHeader className="sticky top-0 bg-card">
+                                                <TableHeader>
                                                     <TableRow>
                                                         <TableHead className="font-bold">Word</TableHead>
                                                         <TableHead className="font-bold">Phonetics</TableHead>

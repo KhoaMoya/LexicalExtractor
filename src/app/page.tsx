@@ -31,15 +31,17 @@ export default function Home() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <Button asChild variant="outline">
-              <Link href="/history">History</Link>
-            </Button>
-            <ThemeToggle />
-            {user && (
-              <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
-                <LogOut className="h-5 w-5" />
-              </Button>
-            )}
+              <div className="flex items-center gap-4">
+                  <Button asChild variant="outline">
+                      <Link href="/history">History</Link>
+                  </Button>
+                  <ThemeToggle />
+              </div>
+              {user && (
+                  <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
+                      <LogOut className="h-5 w-5" />
+                  </Button>
+              )}
           </div>
         </div>
       </header>
