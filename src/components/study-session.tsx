@@ -181,11 +181,9 @@ export function StudySession({ words }: StudySessionProps) {
                             <p className="font-code text-sm">{currentWord.phoneticTranscriptionUK}</p>
                         </div>
                     )}
-                     {status === 'correct' && (
-                        <div className="text-center text-muted-foreground mt-2">
+                     <div className="text-center text-muted-foreground mt-2">
                             <p className="font-code text-sm">{currentWord.phoneticTranscriptionUK}</p>
                         </div>
-                    )}
                 </CardContent>
                 <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 mt-4">
                     <Button variant="outline" onClick={goToPreviousWord} disabled={currentIndex === 0} className="w-full sm:w-auto">
