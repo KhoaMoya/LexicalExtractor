@@ -32,7 +32,7 @@ export function StudySession({ words }: StudySessionProps) {
     const playSound = (word: Word) => {
         playPronunciation(word.word, word.ukSoundUrl, 'en-GB', audioRef);
     };
-    
+
     useEffect(() => {
         // Shuffle words on component mount
         const newShuffledWords = [...words].sort(() => Math.random() - 0.5);
@@ -86,7 +86,7 @@ export function StudySession({ words }: StudySessionProps) {
             setSessionFinished(true);
         }
     };
-    
+
     const goToPreviousWord = () => {
         if (currentIndex > 0) {
             const prevIndex = currentIndex - 1;
@@ -117,7 +117,7 @@ export function StudySession({ words }: StudySessionProps) {
     if (shuffledWords.length === 0) {
         return <p>No words to study.</p>;
     }
-    
+
     if (sessionFinished) {
         return (
             <div className="text-center p-4">
@@ -154,6 +154,10 @@ export function StudySession({ words }: StudySessionProps) {
                         ))}
                     </div>
 
+                    <div className="text-center text-muted-foreground mt-2">
+                        <p className="font-code text-sm">{currentWord.phoneticTranscriptionUK}</p>
+                    </div>
+
                     <div className="relative">
                         <Input
                             ref={inputRef}
@@ -178,12 +182,8 @@ export function StudySession({ words }: StudySessionProps) {
                     {status === 'incorrect' && (
                         <div className="text-center text-red-500 mt-2">
                             <p>Correct answer: <strong className="font-bold">{currentWord.word}</strong></p>
-                            <p className="font-code text-sm">{currentWord.phoneticTranscriptionUK}</p>
                         </div>
                     )}
-                     <div className="text-center text-muted-foreground mt-2">
-                            <p className="font-code text-sm">{currentWord.phoneticTranscriptionUK}</p>
-                        </div>
                 </CardContent>
                 <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 mt-4">
                     <Button variant="outline" onClick={goToPreviousWord} disabled={currentIndex === 0} className="w-full sm:w-auto">
