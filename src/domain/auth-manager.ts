@@ -2,20 +2,34 @@
 'use client';
 
 import { auth } from '@/lib/firebase';
-import { 
-    signInAnonymously as firebaseSignInAnonymously, 
+import {
+    signInAnonymously as firebaseSignInAnonymously,
     User,
     GoogleAuthProvider,
     signInWithPopup,
+    signInWithRedirect,
     signOut,
     createUserWithEmailAndPassword,
-    signInWithEmailAndPassword
+    signInWithEmailAndPassword,
 } from 'firebase/auth';
 
 const googleProvider = new GoogleAuthProvider();
 
+const isMobileDevice = () => {
+    if (typeof navigator === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+    );
+};
+
 export async function signInWithGoogle(): Promise<User | null> {
     try {
+        if (isMobileDevice()) {
+            // Mobile browsers thường chặn popup, dùng redirect sẽ ổn định hơn
+            await signInWithRedirect(auth, googleProvider);
+            return null;
+        }
+
         const result = await signInWithPopup(auth, googleProvider);
         return result.user;
     } catch (error) {

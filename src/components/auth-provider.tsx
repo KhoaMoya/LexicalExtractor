@@ -36,6 +36,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, router, pathname]);
 
+  // Nếu đã đăng nhập mà vẫn đang ở trang login thì tự chuyển về trang chủ
+  useEffect(() => {
+    if (!loading && user && pathname === '/login') {
+      router.push('/');
+    }
+  }, [user, loading, pathname, router]);
+
   if (loading || (!user && !publicPaths.includes(pathname))) {
       return (
           <div className="flex justify-center items-center min-h-screen">
