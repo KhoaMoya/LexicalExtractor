@@ -31,9 +31,12 @@ export default function Home() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-              <div className="flex items-center gap-4">
-                  <Button asChild variant="outline">
+              <div className="flex items-center gap-2 sm:gap-4">
+                  <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
                       <Link href="/history">History</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
+                      <Link href="/topics">Topics</Link>
                   </Button>
                   <ThemeToggle />
               </div>

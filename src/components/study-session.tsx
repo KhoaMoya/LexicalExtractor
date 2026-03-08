@@ -141,22 +141,24 @@ export function StudySession({ words }: StudySessionProps) {
             <Card className="relative">
                 <CardHeader>
                     <div className="flex items-center justify-center gap-4 mb-4">
-                        <h3 className="text-lg font-semibold">Listen & Write</h3>
-                        <PronunciationButton word={currentWord.word} lang="en-GB" label="UK" url={currentWord.ukSoundUrl} />
+                        <h3 className="text-lg">Listen & Write</h3>
+                        <PronunciationButton word={currentWord.word} lang="en-GB" label="US" url={currentWord.usSoundUrl} />
                     </div>
                 </CardHeader>
                 <CardContent>
                     <div className="text-center mb-4 min-h-[50px]">
                         {currentWord.vietnameseMeaning.slice(0, 2).map((meaning, index) => (
-                            <p key={index} className="text-muted-foreground">
-                                <b>{meaning.type}</b>: {meaning.meaning.slice(0, 1).join('; ')}
+                            <p key={index} className="text-white text-lg">
+                                <b>{meaning.meaning.slice(0, 1).join('; ')}</b> ({meaning.type})
                             </p>
                         ))}
                     </div>
 
                     <div className="text-center text-muted-foreground mt-2">
-                        <p className="font-code text-sm">{currentWord.phoneticTranscriptionUK}</p>
+                        <p className="font-code text-sm">{currentWord.phoneticTranscriptionUS}</p>
                     </div>
+
+                    <span className="mx-1"></span>
 
                     <div className="relative">
                         <Input
@@ -167,7 +169,7 @@ export function StudySession({ words }: StudySessionProps) {
                             onKeyDown={handleKeyDown}
                             placeholder="Type the word here..."
                             className={cn(
-                                "text-center text-lg h-12",
+                                "text-center text-xl",
                                 status === 'correct' && 'border-green-500 focus-visible:ring-green-500',
                                 status === 'incorrect' && 'border-red-500 focus-visible:ring-red-500'
                             )}
