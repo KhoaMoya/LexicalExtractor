@@ -167,7 +167,7 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
       </header>
 
       <main className="flex-1 px-3 sm:px-6 lg:px-8 pb-8">
-        <div className="max-w-[90rem] mx-auto pt-4 sm:pt-6 space-y-4">
+        <div className="max-w-[60rem] mx-auto pt-4 sm:pt-6 space-y-4">
           <Card className="shadow-lg border-slate-200 dark:border-slate-800">
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
