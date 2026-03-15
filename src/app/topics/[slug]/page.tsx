@@ -1,11 +1,18 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, LogOut, PlayCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 import {
   Card,
   CardContent,
@@ -25,6 +32,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/components/auth-provider';
 import { signOutUser } from '@/domain/auth-manager';
 import { getTopicBySlug, getWordsForTopic } from '@/domain/topics';
+import { getStatusFor, setStatusFor, syncFromRemote } from '@/domain/learning-manager';
 import { StudySession } from '@/components/study-session';
 import { PronunciationButton } from '@/components/pronunciation-button';
 import {
@@ -47,6 +55,33 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
 
   const topic = getTopicBySlug(params.slug);
   const words = useMemo(() => getWordsForTopic(params.slug), [params.slug]);
+  const [vocabList, setVocabList] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!topic) return;
+    const list = topic.vocabularies.map((v: any) => ({
+      ...v,
+      status: getStatusFor(topic.slug, v.name),
+    }));
+    setVocabList(list);
+  }, [topic]);
+
+  // when user is authenticated, fetch remote records and merge to local view
+  useEffect(() => {
+    if (!topic || !user) return;
+    (async () => {
+      const updated = await Promise.all(
+        topic.vocabularies.map(async (v: any) => {
+          const remote = await syncFromRemote(topic.slug, v.name);
+          if (remote && remote.status) {
+            return { ...v, status: remote.status };
+          }
+          return { ...v, status: getStatusFor(topic.slug, v.name) };
+        })
+      );
+      setVocabList(updated);
+    })();
+  }, [topic, user]);
 
   const handleSignOut = async () => {
     await signOutUser();
@@ -132,7 +167,7 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
       </header>
 
       <main className="flex-1 px-3 sm:px-6 lg:px-8 pb-8">
-        <div className="max-w-4xl mx-auto pt-4 sm:pt-6 space-y-4">
+        <div className="max-w-[90rem] mx-auto pt-4 sm:pt-6 space-y-4">
           <Card className="shadow-lg border-slate-200 dark:border-slate-800">
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
@@ -175,16 +210,53 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
             <CardContent>
               {/* Mobile view: cards */}
               <div className="sm:hidden space-y-2">
-                {topic.vocabularies.map((vocab) => (
+                {vocabList.map((vocab) => (
                   <Card
-                    key={vocab.stt ?? vocab.name}
+                    key={vocab.name}
                     className="p-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-lg font-semibold">
-                          {vocab.name}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-lg font-semibold">
+                            {vocab.name}
+                          </p>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <span>
+                                <Badge variant={
+                                  vocab.status === 'Đã thuộc'
+                                    ? 'default'
+                                    : vocab.status === 'Đang học'
+                                    ? 'secondary'
+                                    : vocab.status === 'Bỏ qua'
+                                    ? 'destructive'
+                                    : 'outline'
+                                } className="cursor-pointer">
+                                  {vocab.status}
+                                </Badge>
+                              </span>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onSelect={() => {
+                                setStatusFor(topic.slug, vocab.name, 'Chưa học');
+                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Chưa học'} : p));
+                              }}>Chưa học</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => {
+                                setStatusFor(topic.slug, vocab.name, 'Đang học');
+                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Đang học'} : p));
+                              }}>Đang học</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => {
+                                setStatusFor(topic.slug, vocab.name, 'Đã thuộc');
+                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Đã thuộc'} : p));
+                              }}>Đã thuộc</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => {
+                                setStatusFor(topic.slug, vocab.name, 'Bỏ qua');
+                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Bỏ qua'} : p));
+                              }}>Bỏ qua</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                         <p className="text-sm text-muted-foreground mt-0.5">
                           {vocab.phonetics}
                           <span className="mx-1"> ({vocab.type ?? ''})</span>
@@ -214,20 +286,17 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
                       <TableHead className="font-bold">Word</TableHead>
                       <TableHead className="font-bold">Phonetics</TableHead>
                       <TableHead className="font-bold">Type</TableHead>
-                      <TableHead className="text-center font-bold">
-                        Sound
-                      </TableHead>
+                      <TableHead className="font-bold">Sound</TableHead>
                       <TableHead className="font-bold">Meaning</TableHead>
+                      <TableHead className="font-bold">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {topic.vocabularies.map((vocab) => (
-                      <TableRow key={vocab.stt ?? vocab.name}>
+                    {vocabList.map((vocab) => (
+                      <TableRow key={vocab.name}>
                         <TableCell className="align-top">
                           <div className="flex flex-col">
-                            <span className="font-semibold text-base">
-                              {vocab.name}
-                            </span>
+                            <span className="font-semibold text-base">{vocab.name}</span>
                           </div>
                         </TableCell>
                         <TableCell className="align-top font-code text-sm sm:text-base">
@@ -248,6 +317,43 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
                         </TableCell>
                         <TableCell className="align-top text-sm sm:text-base">
                           {vocab.meaning}
+                        </TableCell>
+                        <TableCell className="align-top text-sm sm:text-base">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <span>
+                                <Badge variant={
+                                  vocab.status === 'Đã thuộc'
+                                    ? 'default'
+                                    : vocab.status === 'Đang học'
+                                    ? 'secondary'
+                                    : vocab.status === 'Bỏ qua'
+                                    ? 'destructive'
+                                    : 'outline'
+                                } className="cursor-pointer">
+                                  {vocab.status}
+                                </Badge>
+                              </span>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onSelect={() => {
+                                setStatusFor(topic.slug, vocab.name, 'Chưa học');
+                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Chưa học'} : p));
+                              }}>Chưa học</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => {
+                                setStatusFor(topic.slug, vocab.name, 'Đang học');
+                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Đang học'} : p));
+                              }}>Đang học</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => {
+                                setStatusFor(topic.slug, vocab.name, 'Đã thuộc');
+                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Đã thuộc'} : p));
+                              }}>Đã thuộc</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => {
+                                setStatusFor(topic.slug, vocab.name, 'Bỏ qua');
+                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Bỏ qua'} : p));
+                              }}>Bỏ qua</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
