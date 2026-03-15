@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ExtractionRecord, Word } from '@/domain/types';
+import { ExtractionRecord, Word } from '@/domain/ word';
 import * as HistoryManager from '@/domain/history-manager';
 import * as SettingsManager from '@/domain/settings-manager';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

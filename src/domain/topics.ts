@@ -1,5 +1,5 @@
 import topicsJson from '@/assets/topics.json';
-import { Word } from './types';
+import { Word } from './ word';
 
 type RawVocabulary = {
   stt: number;

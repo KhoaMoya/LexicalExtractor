@@ -1,7 +1,7 @@
 "use server";
 
 import { extractAndTranslateWords } from "@/domain/extract-and-translate-words";
-import type { ExtractAndTranslateResult } from "@/domain/types";
+import type { ExtractAndTranslateResult } from "@/domain/ word";
 
 export async function handleExtractAndTranslate(
   prevState: ExtractAndTranslateResult,

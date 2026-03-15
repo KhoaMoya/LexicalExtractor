@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import * as HistoryManager from '@/domain/history-manager';
 import { handleExtractAndTranslate } from "@/app/actions";
-import type { ExtractAndTranslateResult, Word } from "@/domain/types";
+import type { ExtractAndTranslateResult, Word } from "@/domain/ word";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";

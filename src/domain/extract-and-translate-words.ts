@@ -1,7 +1,7 @@
 'use serverçç';
 
 import { JSDOM } from 'jsdom';
-import type { Word, Meaning } from './types';
+import type { Word, Meaning } from './ word';
 
 export async function extractAndTranslateWords(
   input: string

@@ -1,7 +1,7 @@
 'use client';
 
 import { Long } from 'bson';
-import type { Word, ExtractionRecord } from './types';
+import type { Word, ExtractionRecord } from './ word';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, doc, deleteDoc, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getCurrentUser } from './auth-manager';
