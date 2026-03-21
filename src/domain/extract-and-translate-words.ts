@@ -164,3 +164,40 @@ function parseToMeanings(doc: Document): Meaning[] {
 
   return meanings;
 }
+
+export async function fetchCambridgePronunciation(word: string): Promise<{ pronounce: string | null; sound: string | null; }> {
+  try {
+    const url = `https://dictionary.cambridge.org/vi/pronunciation/english/${encodeURIComponent(word.toLowerCase())}`;
+    const res = await fetch(url);
+    const html = await res.text();
+    const doc = new JSDOM(html).window.document;
+
+    let pronounce = null;
+    let sound = null;
+
+    const regionNodes = doc.getElementsByClassName('primary-pron');
+    for (const regionNode of regionNodes) {
+      const regionText = regionNode.children[0].getAttribute('data-pron-region');
+      if (regionText === 'US') {
+        const soundNodes = regionNode.getElementsByTagName('source');
+        for (const soundNode of soundNodes) {
+          if (soundNode.getAttribute('type') === 'audio/mpeg') {
+            sound = 'https://dictionary.cambridge.org' + soundNode.getAttribute('src');
+            break;
+          }
+        }
+        const pronounceNode = regionNode.getElementsByClassName('pron')[0];
+        if (pronounceNode) {
+          pronounce = pronounceNode.textContent;
+        }
+        break;
+      }
+    }
+    console.log('=>', word, { pronounce, sound, url });
+
+    return { pronounce, sound };
+  } catch (error) {
+    console.error('Error fetching Cambridge pronunciation for', word, error);
+    return { pronounce: null, sound: null };
+  }
+}

@@ -310,7 +310,7 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
                             <PronunciationButton
                               word={vocab.name}
                               lang="en-GB"
-                              label="UK"
+                              label="US"
                               url={vocab.soundUrl}
                             />
                           )}
