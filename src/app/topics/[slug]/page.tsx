@@ -56,6 +56,29 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
   const topic = getTopicBySlug(params.slug);
   const words = useMemo(() => getWordsForTopic(params.slug), [params.slug]);
   const [vocabList, setVocabList] = useState<any[]>([]);
+  const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
+  const [studyOpen, setStudyOpen] = useState(false);
+  const [studyStarted, setStudyStarted] = useState(false);
+
+  const toggleSelect = (name: string) => {
+    setSelectedWords(prev => {
+      const s = new Set(prev);
+      if (s.has(name)) s.delete(name);
+      else s.add(name);
+      return s;
+    });
+  };
+
+  const clearSelect = () => setSelectedWords(new Set());
+
+  const selectedStudyWords = useMemo(() => {
+    if (!words) return [];
+    if (selectedWords.size === 0) return words;
+    return words.filter(w => {
+      const key = (w as any).word ?? (w as any).name;
+      return key && selectedWords.has(key);
+    });
+  }, [words, selectedWords]);
 
   useEffect(() => {
     if (!topic) return;
@@ -167,7 +190,7 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
       </header>
 
       <main className="flex-1 px-3 sm:px-6 lg:px-8 pb-8">
-        <div className="max-w-[60rem] mx-auto pt-4 sm:pt-6 space-y-4">
+        <div className="max-w-[70rem] mx-auto pt-4 sm:pt-6 space-y-4">
           <Card className="shadow-lg border-slate-200 dark:border-slate-800">
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
@@ -180,12 +203,19 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Dialog>
+                  <Dialog open={studyOpen} onOpenChange={(open) => {
+                    setStudyOpen(open);
+                    if (!open) {
+                      setStudyStarted(false);
+                      clearSelect();
+                    }
+                  }}>
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
                         size="sm"
                         className="px-3 py-1 text-xs sm:text-sm"
+                        onClick={() => setStudyOpen(true)}
                       >
                         <PlayCircle className="h-4 w-4 mr-1" />
                         Study
@@ -197,11 +227,49 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
                           Study · {topic?.name}
                         </DialogTitle>
                       </DialogHeader>
-                      {words && words.length > 0 && (
-                        <div className="max-h-[70vh] overflow-y-auto">
-                          <StudySession words={words} />
+
+                      {!studyStarted && (
+                        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                          <p className="text-sm text-muted-foreground">Chọn từ bạn muốn học rồi nhấn "Start" (để trống = tất cả)</p>
+                          <div className="grid gap-2">
+                            {vocabList.map((v: any) => (
+                              <label key={v.name} className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedWords.has(v.name)}
+                                  onChange={() => toggleSelect(v.name)}
+                                  className="h-4 w-4"
+                                />
+                                <span className="font-medium">{v.name}</span>
+                                <span className="text-sm text-muted-foreground ml-2">{v.phonetics}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-end gap-2 pt-2">
+                            <Button variant="outline" onClick={() => { setStudyOpen(false); }}>
+                              Cancel
+                            </Button>
+                            <Button onClick={() => setStudyStarted(true)}>
+                              Start
+                            </Button>
+                          </div>
                         </div>
                       )}
+
+                      {studyStarted && (
+                        <div className="max-h-[70vh] overflow-y-auto">
+                          <StudySession words={selectedStudyWords} />
+                          <div className="flex items-center justify-end gap-2 mt-3">
+                            <Button variant="outline" onClick={() => { setStudyStarted(false); }}>
+                              Back
+                            </Button>
+                            <Button onClick={() => { setStudyOpen(false); setStudyStarted(false); clearSelect(); }}>
+                              Close
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -210,72 +278,75 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
             <CardContent>
               {/* Mobile view: cards */}
               <div className="sm:hidden space-y-2">
-                {vocabList.map((vocab) => (
-                  <Card
-                    key={vocab.name}
-                    className="p-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-lg font-semibold">
-                            {vocab.name}
+                {vocabList.map((vocab, idx) => {
+                  return (
+                    <Card
+                      key={vocab.name}
+                      className="p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-lg font-semibold">
+                              {vocab.name}
+                            </p>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <span>
+                                  <Badge variant={
+                                    vocab.status === 'Đã thuộc'
+                                      ? 'default'
+                                      : vocab.status === 'Đang học'
+                                        ? 'secondary'
+                                        : vocab.status === 'Bỏ qua'
+                                          ? 'destructive'
+                                          : 'outline'
+                                  } className="cursor-pointer">
+                                    {vocab.status}
+                                  </Badge>
+                                </span>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => {
+                                  setStatusFor(topic.slug, vocab.name, 'Chưa học');
+                                  setVocabList(prev => prev.map(p => p.name === vocab.name ? { ...p, status: 'Chưa học' } : p));
+                                }}>Chưa học</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => {
+                                  setStatusFor(topic.slug, vocab.name, 'Đang học');
+                                  setVocabList(prev => prev.map(p => p.name === vocab.name ? { ...p, status: 'Đang học' } : p));
+                                }}>Đang học</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => {
+                                  setStatusFor(topic.slug, vocab.name, 'Đã thuộc');
+                                  setVocabList(prev => prev.map(p => p.name === vocab.name ? { ...p, status: 'Đã thuộc' } : p));
+                                }}>Đã thuộc</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => {
+                                  setStatusFor(topic.slug, vocab.name, 'Bỏ qua');
+                                  setVocabList(prev => prev.map(p => p.name === vocab.name ? { ...p, status: 'Bỏ qua' } : p));
+                                }}>Bỏ qua</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            {vocab.phonetics}
+                            <span className="mx-1"> ({vocab.type ?? ''})</span>
                           </p>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <span>
-                                <Badge variant={
-                                  vocab.status === 'Đã thuộc'
-                                    ? 'default'
-                                    : vocab.status === 'Đang học'
-                                    ? 'secondary'
-                                    : vocab.status === 'Bỏ qua'
-                                    ? 'destructive'
-                                    : 'outline'
-                                } className="cursor-pointer">
-                                  {vocab.status}
-                                </Badge>
-                              </span>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem onSelect={() => {
-                                setStatusFor(topic.slug, vocab.name, 'Chưa học');
-                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Chưa học'} : p));
-                              }}>Chưa học</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => {
-                                setStatusFor(topic.slug, vocab.name, 'Đang học');
-                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Đang học'} : p));
-                              }}>Đang học</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => {
-                                setStatusFor(topic.slug, vocab.name, 'Đã thuộc');
-                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Đã thuộc'} : p));
-                              }}>Đã thuộc</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => {
-                                setStatusFor(topic.slug, vocab.name, 'Bỏ qua');
-                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Bỏ qua'} : p));
-                              }}>Bỏ qua</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <p className="text-base mt-1">
+                            {vocab.meaning}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                          {vocab.phonetics}
-                          <span className="mx-1"> ({vocab.type ?? ''})</span>
-                        </p>
-                        <p className="text-base mt-1">
-                          {vocab.meaning}
-                        </p>
+                        {vocab.soundUrl && (
+                          <PronunciationButton
+                            word={vocab.name}
+                            lang="en-GB"
+                            label="UK"
+                            url={vocab.soundUrl}
+                          />
+                        )}
                       </div>
-                      {vocab.soundUrl && (
-                        <PronunciationButton
-                          word={vocab.name}
-                          lang="en-GB"
-                          label="UK"
-                          url={vocab.soundUrl}
-                        />
-                      )}
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  )
+                })
+                }
               </div>
 
               {/* Desktop view: table */}
@@ -283,6 +354,7 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="font-bold">STT</TableHead>
                       <TableHead className="font-bold">Word</TableHead>
                       <TableHead className="font-bold">Phonetics</TableHead>
                       <TableHead className="font-bold">Type</TableHead>
@@ -292,71 +364,77 @@ export default function TopicDetailPage({ params }: TopicDetailPageProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {vocabList.map((vocab) => (
-                      <TableRow key={vocab.name}>
-                        <TableCell className="align-top">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-base">{vocab.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top font-code text-sm sm:text-base">
-                          {vocab.phonetics}
-                        </TableCell>
-                        <TableCell className="align-top text-sm sm:text-base">
-                          {vocab.type ?? ''}
-                        </TableCell>
-                        <TableCell className="align-top text-center">
-                          {vocab.soundUrl && (
-                            <PronunciationButton
-                              word={vocab.name}
-                              lang="en-GB"
-                              label="US"
-                              url={vocab.soundUrl}
-                            />
-                          )}
-                        </TableCell>
-                        <TableCell className="align-top text-sm sm:text-base">
-                          {vocab.meaning}
-                        </TableCell>
-                        <TableCell className="align-top text-sm sm:text-base">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <span>
-                                <Badge variant={
-                                  vocab.status === 'Đã thuộc'
-                                    ? 'default'
-                                    : vocab.status === 'Đang học'
-                                    ? 'secondary'
-                                    : vocab.status === 'Bỏ qua'
-                                    ? 'destructive'
-                                    : 'outline'
-                                } className="cursor-pointer">
-                                  {vocab.status}
-                                </Badge>
-                              </span>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem onSelect={() => {
-                                setStatusFor(topic.slug, vocab.name, 'Chưa học');
-                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Chưa học'} : p));
-                              }}>Chưa học</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => {
-                                setStatusFor(topic.slug, vocab.name, 'Đang học');
-                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Đang học'} : p));
-                              }}>Đang học</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => {
-                                setStatusFor(topic.slug, vocab.name, 'Đã thuộc');
-                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Đã thuộc'} : p));
-                              }}>Đã thuộc</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => {
-                                setStatusFor(topic.slug, vocab.name, 'Bỏ qua');
-                                setVocabList(prev => prev.map(p => p.name === vocab.name ? {...p, status: 'Bỏ qua'} : p));
-                              }}>Bỏ qua</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {vocabList.map((vocab, idx) => {
+                      const showStt = idx === 0 || vocab.stt !== vocabList[idx - 1]?.stt;
+                      return (
+                        <TableRow key={vocab.name}>
+                          <TableCell className="align-middle text-sm sm:text-base">
+                            {showStt ? vocab.stt : ''}
+                          </TableCell>
+                          <TableCell className="align-middle">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-base">{vocab.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-middle font-code text-sm sm:text-base">
+                            {vocab.phonetics}
+                          </TableCell>
+                          <TableCell className="align-middle text-sm sm:text-base">
+                            {vocab.type ?? ''}
+                          </TableCell>
+                          <TableCell className="align-middle text-center">
+                            {vocab.soundUrl && (
+                              <PronunciationButton
+                                word={vocab.name}
+                                lang="en-GB"
+                                label="US"
+                                url={vocab.soundUrl}
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell className="align-middle text-sm sm:text-base">
+                            {vocab.meaning}
+                          </TableCell>
+                          <TableCell className="align-middle text-sm sm:text-base">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <span>
+                                  <Badge variant={
+                                    vocab.status === 'Đã thuộc'
+                                      ? 'default'
+                                      : vocab.status === 'Đang học'
+                                        ? 'secondary'
+                                        : vocab.status === 'Bỏ qua'
+                                          ? 'destructive'
+                                          : 'outline'
+                                  } className="cursor-pointer">
+                                    {vocab.status}
+                                  </Badge>
+                                </span>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => {
+                                  setStatusFor(topic.slug, vocab.name, 'Chưa học');
+                                  setVocabList(prev => prev.map(p => p.name === vocab.name ? { ...p, status: 'Chưa học' } : p));
+                                }}>Chưa học</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => {
+                                  setStatusFor(topic.slug, vocab.name, 'Đang học');
+                                  setVocabList(prev => prev.map(p => p.name === vocab.name ? { ...p, status: 'Đang học' } : p));
+                                }}>Đang học</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => {
+                                  setStatusFor(topic.slug, vocab.name, 'Đã thuộc');
+                                  setVocabList(prev => prev.map(p => p.name === vocab.name ? { ...p, status: 'Đã thuộc' } : p));
+                                }}>Đã thuộc</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => {
+                                  setStatusFor(topic.slug, vocab.name, 'Bỏ qua');
+                                  setVocabList(prev => prev.map(p => p.name === vocab.name ? { ...p, status: 'Bỏ qua' } : p));
+                                }}>Bỏ qua</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
